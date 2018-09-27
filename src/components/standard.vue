@@ -22,10 +22,14 @@
                    'width':viewData.trimBoxWidth + 'px',
                    'height':viewData.trimBoxHeight +  'px',
                    'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth)/2 + 'px',
-                   'margin-top':(viewData.artBoxHeight  - viewData.trimBoxHeight)/2 + 'px'
-                 }"
-                 :class="[reversal?'reversal':'']">
-              <img :src="viewData.imageUrl" alt="" :style="{'width':toBig?viewData.artBoxWidth+'px':'','height':toBig?viewData.artBoxHeight + 'px':''}" :class="[rotateClass]" v-if="viewData.imageUrl!==''">
+                   'top':(viewData.artBoxHeight  - viewData.trimBoxHeight)/2 + 'px'
+                 }">
+              <img :src="viewData.imageUrl" alt=""
+                   :style="{
+                   'width':toBig?viewData.artBoxWidth+'px':'',
+                   'height':toBig?viewData.artBoxHeight + 'px':'',
+                   'transform':reversal?'rotate('+rotateClass+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+rotateClass+'deg) translate(-50%,-50%)'
+                   }" v-if="viewData.imageUrl!==''">
               <img src="static/images/add.png" alt="" style="cursor: pointer" v-else>
             </div>
             <div class="operation"
@@ -33,7 +37,6 @@
                  'width':viewData.trimBoxWidth+'px',
                  'height':viewData.trimBoxHeight + 'px',
                  'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth -2.5)/2 + 'px',
-                 'margin-top':(viewData.artBoxHeight  - viewData.trimBoxHeight -2.5)/2 + 'px',
                  cursor: viewData.imageUrl!==''?'':'pointer'}" >
               <div class="add-item add-l" @click="addItem(0)" :style="{'display':modeType === 1?'block':'none'}">
                 <div class="head">+</div>
@@ -44,15 +47,15 @@
               <!--这是垂直方向（y轴）的-->
               <div class="v-item add-v" v-drag:y="dragV" v-for="(item,index) in varr" :style="{'top':item.y + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(0,index)" :id="item.id" :data-min="viewData.materialMinHeight" :data-max="viewData.materialMaxHeight" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
-                <div class="line" :style="{'width':sw + 15 + 'px'}"></div>
-                <div class="count">{{item.y + 13}}</div>
+                <div class="line" :style="{'width':viewData.artBoxWidth + 'px'}"></div>
+                <div class="count">{{(item.y + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
                 <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':sw + 35 + 'px'}">+</div>
               </div>
               <!--这是水平方向（x轴）的-->
               <div class="l-item" v-drag:x="dragL" v-for="(item,index) in larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidth" :data-max="viewData.materialMaxWidth" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
-                <div class="line" :style="{'height':sh + 15 + 'px'}"></div>
-                <div class="count">{{item.x}}</div>
+                <div class="line" :style="{'height':viewData.artBoxHeight + 'px'}"></div>
+                <div class="count">{{item.x/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
                 <div class="del" v-if="lIndex === index" @click="delItem(1,index)" :style="{'top':sh + 35 + 'px'}">+</div>
               </div>
             </div>
@@ -65,8 +68,8 @@
             <div class="content">
               <!--<p>文件大小: -</p>-->
               <p>需求大小: {{ productData.width - (-productData.bleedingLine)}}cm X {{ productData.height - (-productData.bleedingLine)}}cm</p>
-              <p>最大: {{ productData.materialMaxWidth - (-productData.bleedingLine)}}cm X {{ productData.materialMaxHeight - (-productData.bleedingLine)}}cm</p>
-              <p>最小: {{ productData.materialMinWidth - (-productData.bleedingLine)}}cm X {{ productData.materialMinHeight - (-productData.bleedingLine)}}cm</p>
+              <p>最大: {{ productData.materialMaxWidth }}cm X {{ productData.materialMaxHeight }}cm</p>
+              <p>最小: {{ productData.materialMinWidth }}cm X {{ productData.materialMinHeight }}cm</p>
               <p>DPI: {{ productData.dpi }}</p>
             </div>
           </div>
@@ -80,7 +83,7 @@
             </div>
           </div>
           <div class="data-item">
-            <div class="title"><b>放大</b></div>
+            <div class="title"><b>填充</b></div>
             <div class="content">
               <div class="bg_con">
                 <input id="checked_2" type="checkbox" class="switch" v-model="toBig"/>
@@ -106,6 +109,7 @@
                 :selectWidth="200"
                 :selectIndex="modeType"
                 @selectThisOne="selectThisOne"
+                :canSelect="canSelectMode"
               />
             </div>
           </div>
@@ -120,7 +124,7 @@
           <div class="data-item">
             <div class="title"><b></b></div>
             <div class="content">
-              <div class="btn save" >保存</div>
+              <div class="btn save" @click="saveSetting">保存</div>
             </div>
           </div>
 
@@ -144,13 +148,21 @@
       iselect
     },
 
+    filters:{
+      fixed1(val) {
+        return val.toFixed(1)
+      }
+    },
+
     data() {
       return {
+
+        canSelectMode:true,
 
         ballR:13,//小球半径
 
         viewData:{
-          "shoppingCartID":"7cb24857-e7dd-40ca-9678-6f670e46988c",
+          /*"shoppingCartID":"7cb24857-e7dd-40ca-9678-6f670e46988c",
           "productID":"cfcf1c8e-2785-467f-af95-531bcba69b02",
           "productName":"彩色墙纸",
           "printSides":1,
@@ -170,7 +182,7 @@
           "trimBoxHeight":750.0,
           "artBoxWidth":772.5,
           "artBoxHeight":772.5,
-          "proportion":0.264583319
+          "proportion":0.264583319*/
         },
 
         productData:{},
@@ -192,7 +204,7 @@
         sh: 750,
         reversal:false,
         toBig:false,
-        rotateClass:'rotate0'
+        rotateClass:0
       }
     },
 
@@ -200,6 +212,7 @@
 
       let sid = this.$router.history.current.query.shoppingCartId;
       if(sid) {
+        this.sid = sid;
         axios.post('http://www.thatime.me/baichengweb/Product/UploadTemplateData',{
           shoppingCartId:sid,
           admin:'deepmind',
@@ -209,6 +222,11 @@
             console.log(res)
             if(res.data.Success) {
               this.productData = Object.assign({},res.data.Data);
+              if(this.productData.width > this.productData.materialMaxWidth || this.productData.height > this.productData.materialMaxHeight) {
+                this.modeType = 1;
+                this.canSelectMode = false;
+              }
+
             }
           })
           .catch(err=>{
@@ -224,6 +242,77 @@
     },
 
     methods:{
+
+      compareNum(a,b,c) {
+        return b-a>c;
+      },
+
+      saveSetting() {
+        if(!this.canSelectMode) {
+          console.log(!!this.larr.length , !!this.varr.length);
+          if(this.larr.length === 0 || this.varr.length === 0) {
+            alert('需要画线操作，请进行画线操作')
+          } else {
+            let maxDistY = this.viewData.materialMaxHeight,
+                maxDistX = this.viewData.materialMaxWidth,
+                larr = this.larr,
+                varr = this.varr,
+                llen = larr.length,
+                vlen = varr.length;
+
+            for(let i = 0;i<llen-1;i++) {
+
+              console.log(larr[i].x,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
+              if(this.compareNum(larr[i].x,larr[i+1].x,maxDistX)) {
+                alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                return
+              }
+            }
+
+            if(this.compareNum(larr[llen-1].x,this.viewData.trimBoxWidth,maxDistX)) {
+              alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
+              return
+            }
+
+            let ballR = this.ballR;
+
+            for(let i = 0;i<vlen-1;i++) {
+
+              console.log(varr[i].y,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
+              if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
+                alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                return
+              }
+            }
+
+            if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
+              console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
+              alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
+              return
+            }
+
+            let obj = {
+              shoppingCartID:this.sid,
+              x:larr.map(item=>item.x),
+              y:varr.map(item=>item.y + this.ballR),
+              fill:this.toBig,
+              rotate:this.rotateClass,
+              mirror:this.reversal
+            };
+
+            axios.post('api/baicheng/CropImage',obj)
+              .then(res=>{
+                console.log(res)
+              })
+              .catch(err=>{
+                console.log(err)
+              })
+
+            console.log(obj);
+
+          }
+        }
+      },
 
       toUploadFile() {
         let p =  this.$refs.uploadFile;
@@ -244,23 +333,23 @@
         console.log('onchange',document.querySelector('.uploadFile'));
         let form = document.querySelector('.uploadFile'),
           flObj = document.querySelector('#uploadImg'),
-          file=flObj.files[0],
-          fReader=new FileReader();
+          file=flObj.files[0];
         if(file.type.indexOf("image") >= 0) {
-          /*fReader.readAsDataURL(file);
-          fReader.onload = e =>{
-            console.log(e);
-            this.imgs.push(e.target.result)
-          }*/
 
           let formData = new FormData(form);
-
-          //?shoppingCartId=7cb24857-e7dd-40ca-9678-6f670e46988c
-          axios.post('/api/baicheng/uploadfile?shoppingCartId=7cb24857-e7dd-40ca-9678-6f670e46988c',formData)
+          axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid,formData)
             .then(res=>{
               console.log(res)
               if(res.data.code === 2000) {
                 this.viewData = res.data.result;
+                if(!this.canSelectMode) {
+                  this.varr = [];
+                  this.larr = [];
+                  this.addItem(1,this.viewData.materialMaxWidth);
+                  this.addItem(0,this.viewData.materialMaxHeight - this.ballR);
+                }
+              } else {
+                alert('请求出了问题，请稍后再试！')
               }
             })
             .catch(err=>{
@@ -278,21 +367,9 @@
       },
 
       toRotateImg() {
-        switch (this.rotateClass) {
-          case "rotate0":
-            this.rotateClass = 'rotate1';
-            break;
-          case "rotate1":
-            this.rotateClass = 'rotate2';
-            break;
-          case "rotate2":
-            this.rotateClass = 'rotate3';
-            break;
-          case "rotate3":
-            this.rotateClass = 'rotate0';
-            break;
-
-        }
+        console.log(this.rotateClass);
+        this.rotateClass += 90;
+        this.rotateClass %= 360;
       },
 
       closeModal(){
@@ -384,17 +461,17 @@
         }
       },
 
-      addItem(code) {
+      addItem(code,pos=null) {
         if(code === 0) {
           this.varr.unshift({
             id:this.varr.length,
             x:0,
-            y:this.viewData.materialMinHeight - this.ballR
+            y:pos===null?this.viewData.materialMinHeight - this.ballR:pos
           })
         } else {
           this.larr.unshift({
             id:this.larr.length,
-            x:this.viewData.materialMinWidth,
+            x:pos===null?this.viewData.materialMinWidth:pos,
             y:0
           })
         }
@@ -651,6 +728,8 @@
     left:50px;
     top:-25px;
     padding:2px 10px;
+    font-size: 14px;
+    min-width: 40px;
   }
   .v-item>.count::after{
     content: '';
@@ -718,7 +797,9 @@
     position: absolute;
     left:35px;
     top:35px;
-    padding:2px 10px;
+    padding:2px 8px;
+    font-size: 14px;
+    min-width: 40px;
   }
   .l-item>.count::after{
     content: '';
@@ -762,23 +843,22 @@
     position: absolute;
     top:50%;
     left:50%;
+    transform-origin: 0% 0%;
     transform: translate(-50%,-50%);
   }
-  .reversal{
-    transform: rotateY(180deg);
+  .img-container>.rotate0{
+    transform: rotate(0deg) translate(-50%,-50%);
   }
-  .rotate0{
-    transform: rotate(0deg);
+  .img-container>.rotate1{
+    transform: rotate(90deg) translate(-50%,-50%);
   }
-  .rotate1{
-    transform: rotate(90deg);
-  }
-  .rotate2{
-     transform: rotate(180deg);
+  .img-container>.rotate2{
+     transform: rotate(180deg) translate(-50%,-50%);
    }
-  .rotate3{
-      transform: rotate(270deg);
+  .img-container>.rotate3{
+      transform: rotate(270deg) translate(-50%,-50%);
     }
+
   .standard {
     display: flex;
     margin:50px auto;
@@ -791,14 +871,15 @@
     user-select: none;
   }
   .warp-container{
-    //background: #ccc;
+    //background: #f00;
     position: relative;
     width: calc(100% - 300px);
   }
   .warp-container>.warp{
     margin:100px auto;
     background: #fff;
-    padding:10px;
+    //padding:10px;
+    box-sizing: border-box;
   }
   .warp-container>.operation{
     margin:0px auto;
