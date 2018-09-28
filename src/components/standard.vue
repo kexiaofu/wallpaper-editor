@@ -12,9 +12,11 @@
         </div>
       </div>-->
       <div class="modal" :style="{'min-width':sw+360+'px'}">
-        <div class="close" @click="closeModal">X</div>
+        <div class="close" @click="closeModal" >
+          <img src="static/images/close.png" alt="">
+        </div>
 
-        <div class="warp-container">
+        <div class="warp-container" v-if="true">
           <div class="warp" :style="{'width':viewData.artBoxWidth + 'px','height':viewData.artBoxHeight +  'px'}" v-if="viewData.imageUrl">
             <div class="img-container"
                  ref="container"
@@ -55,9 +57,17 @@
               <div class="l-item" v-drag:x="dragL" v-for="(item,index) in larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidth" :data-max="viewData.materialMaxWidth" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'height':viewData.artBoxHeight + 'px'}"></div>
-                <div class="count">{{item.x/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
+                <div class="count">{{(item.x + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
                 <div class="del" v-if="lIndex === index" @click="delItem(1,index)" :style="{'top':sh + 35 + 'px'}">+</div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="warp-container" v-else>
+          <div class="warp" style="width: 750px;height: 750px;">
+            <div class="img-container" style="height: 750px;">
+              <img src="static/images/opacity.png" alt="" >
             </div>
           </div>
         </div>
@@ -105,7 +115,7 @@
             <div class="title"><b>模式</b></div>
             <div class="content">
               <iselect
-                :arr="['普通','自动画线']"
+                :arr="['普通','画线']"
                 :selectWidth="200"
                 :selectIndex="modeType"
                 @selectThisOne="selectThisOne"
@@ -121,7 +131,7 @@
             </div>
           </div>
 
-          <div class="data-item">
+          <div class="data-item" v-if="viewData.hasOwnProperty('imageUrl')">
             <div class="title"><b></b></div>
             <div class="content">
               <div class="btn save" @click="saveSetting">保存</div>
@@ -133,7 +143,13 @@
       </div>
 
       <form class="uploadFile" ref="uploadFile"></form>
+      <div class="waiting" v-if="waiting">
+        <div class="loading">
+          <div class="loader"></div>
+          <p>please waiting!</p>
+        </div>
 
+      </div>
     </div>
 </template>
 
@@ -157,12 +173,14 @@
     data() {
       return {
 
+        waiting:false,
+
         canSelectMode:true,
 
         ballR:13,//小球半径
 
-        viewData:{
-          /*"shoppingCartID":"7cb24857-e7dd-40ca-9678-6f670e46988c",
+        viewData:{/*
+          "shoppingCartID":"7cb24857-e7dd-40ca-9678-6f670e46988c",
           "productID":"cfcf1c8e-2785-467f-af95-531bcba69b02",
           "productName":"彩色墙纸",
           "printSides":1,
@@ -171,13 +189,13 @@
           "height":2834.64575,
           "materialMaxWidth":375.0,
           "materialMaxHeight":375.0,
-          "materialMinWidth":75.0,
-          "materialMinHeight":75.0,
+          "materialMinWidth":0,
+          "materialMinHeight":0,
           "dpi":500,
           "bleedingLine":85.03937,
           "whiteLine":85.03937,
           "stickerNum":0,
-          "imageUrl":"http://192.168.2.157:81/BaiChengImage/7cb24857-e7dd-40ca-9678-6f670e46988c/Thumbnail/a8474572632ab3c0688c47c75998ac4e.jpg",
+          "imageUrl":"http://192.168.2.157:56790/BaiChengImage/5477dd42-345f-4c38-a8b7-ae0019db85d5/Thumbnail/_SUN4097.JPG",
           "trimBoxWidth":750.0,
           "trimBoxHeight":750.0,
           "artBoxWidth":772.5,
@@ -234,6 +252,9 @@
           });
       }
 
+      //测试用
+      //this.addItem(1,this.viewData.materialMaxWidth - this.ballR);
+      //this.addItem(0,this.viewData.materialMaxHeight - this.ballR);
 
 
       //this.maxL = this.$router.history.current.params.w;
@@ -249,7 +270,6 @@
 
       saveSetting() {
         if(!this.canSelectMode) {
-          console.log(!!this.larr.length , !!this.varr.length);
           if(this.larr.length === 0 || this.varr.length === 0) {
             alert('需要画线操作，请进行画线操作')
           } else {
@@ -258,27 +278,26 @@
                 larr = this.larr,
                 varr = this.varr,
                 llen = larr.length,
-                vlen = varr.length;
+                vlen = varr.length,
+                ballR = this.ballR;
 
             for(let i = 0;i<llen-1;i++) {
 
-              console.log(larr[i].x,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
-              if(this.compareNum(larr[i].x,larr[i+1].x,maxDistX)) {
+              console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
+              if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
                 alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
                 return
               }
             }
-
-            if(this.compareNum(larr[llen-1].x,this.viewData.trimBoxWidth,maxDistX)) {
+            console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
+            if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
               alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
               return
             }
 
-            let ballR = this.ballR;
-
             for(let i = 0;i<vlen-1;i++) {
 
-              console.log(varr[i].y,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
+              console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
               if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
                 alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
                 return
@@ -293,20 +312,27 @@
 
             let obj = {
               shoppingCartID:this.sid,
-              x:larr.map(item=>item.x),
+              x:larr.map(item=>item.x + this.ballR),
               y:varr.map(item=>item.y + this.ballR),
               fill:this.toBig,
               rotate:this.rotateClass,
               mirror:this.reversal
             };
 
+            this.waiting = true;
+
             axios.post('api/baicheng/CropImage',obj)
               .then(res=>{
-                console.log(res)
+                console.log(res);
+                this.waiting = false;
+                if(res.data.code === 2000) {
+                  window.location.href = this.productData.linkUrl + '&action=ok'
+                }
               })
               .catch(err=>{
+                this.waiting = false;
                 console.log(err)
-              })
+              });
 
             console.log(obj);
 
@@ -337,15 +363,17 @@
         if(file.type.indexOf("image") >= 0) {
 
           let formData = new FormData(form);
+          this.waiting = true;
           axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid,formData)
             .then(res=>{
-              console.log(res)
+              console.log(res);
+              this.waiting = false;
               if(res.data.code === 2000) {
                 this.viewData = res.data.result;
                 if(!this.canSelectMode) {
                   this.varr = [];
                   this.larr = [];
-                  this.addItem(1,this.viewData.materialMaxWidth);
+                  this.addItem(1,this.viewData.materialMaxWidth - this.ballR);
                   this.addItem(0,this.viewData.materialMaxHeight - this.ballR);
                 }
               } else {
@@ -353,6 +381,7 @@
               }
             })
             .catch(err=>{
+              this.waiting = false;
               console.log(err)
             })
 
@@ -373,7 +402,12 @@
       },
 
       closeModal(){
-        alert('将会关闭页面哦')
+
+        console.log(this.productData.linkUrl);
+
+        window.location.href=this.productData.linkUrl + '&action=cancel';
+
+        //alert('将会关闭页面哦')
         //this.modalShow = false;
         //this.w = '';
       },
@@ -471,7 +505,7 @@
         } else {
           this.larr.unshift({
             id:this.larr.length,
-            x:pos===null?this.viewData.materialMinWidth:pos,
+            x:pos===null?this.viewData.materialMinWidth - this.ballR:pos,
             y:0
           })
         }
@@ -514,16 +548,63 @@
 </script>
 
 <style scoped>
+  @import '../assets/loading.css';
+  .waiting {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, .7);
+    z-index: 99;
+  }
+  .loading{
+    width:120px;
+    height: 120px;
+    position: absolute;
+    left:50%;
+    top:40%;
+    transform: translate(-50%,-50%);
+  }
+
+  .loading>p{
+    color:#ccc;
+    font-size: 18px;
+    margin-top:20px;
+  }
+
+  .waiting>img{
+    position: absolute;
+    top:30%;
+    left: 50%;
+    //transform-origin: 0 0;
+    //transform: translate(-50%,-50%);
+    //animation: waiting 3s ease infinite;
+  }
+
+  @keyframes waiting {
+    ftom{
+      transform: rotate(0deg);
+    }
+    to{
+      transform: rotate(360deg);
+    }
+  }
+
+  .warp-opacity{
+
+  }
   .btn{
     width: 260px;
-    height: 30px;
-    line-height: 30px;
+    height: 36px;
+    line-height: 36px;
     background: #005db8;
     text-align: center;
     color: #fff;
     cursor: pointer;
     border-radius:5px;
     user-select: none;
+    font-size: 18px;
   }
   .save{
     background: limegreen;
@@ -536,7 +617,7 @@
     background: #eee;
     width: calc(100% - 20px);
     height:calc(100% - 11px);
-    border-radius:5px;
+    border-radius:10px;
     overflow: hidden;
     border:1px solid #cdcdcd;
     border-bottom:none;
@@ -546,9 +627,12 @@
     top:10px;
     right: 10px;
     z-index: 13;
-    font-size: 24px;
     color:#999;
     cursor: pointer;
+  }
+  .close>img{
+    width: 24px;
+    height: 24px;
   }
   .s-item{
     width: 200px;
@@ -637,11 +721,11 @@
   }
 
   .data-container{
-    width: 300px;
+    width: 370px;
     height: 100%;
     margin:0 0 0 20px;
     border-left:2px solid #cdcdcd;
-    padding: 20px;
+    padding: 40px 60px;
     box-sizing: border-box;
     position: absolute;
     top:0;
@@ -649,9 +733,12 @@
     background: #fff;
     z-index: 12;
   }
+  .data-item{
+    margin:10px 0;
+  }
   .data-item > .title {
     font-size:18px;
-    padding-bottom:10px;
+    padding-bottom:5px;
   }
   .svg-container {
     display: inline-block;
@@ -873,7 +960,7 @@
   .warp-container{
     //background: #f00;
     position: relative;
-    width: calc(100% - 300px);
+    width: calc(100% - 370px);
   }
   .warp-container>.warp{
     margin:100px auto;

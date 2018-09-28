@@ -27,8 +27,8 @@ Vue.directive('drag',{
             maxDist = +oDiv.getAttribute('data-max');
             minDist = +oDiv.getAttribute('data-min');
             let container = document.querySelector('.img-container'),
-              minL = 0,//x轴，不需要减去小球半径
-              maxL = container.offsetWidth;
+              minL = -r,//x轴，不需要减去小球半径
+              maxL = container.offsetWidth - r;
             prev = oDiv.previousElementSibling;
             next = oDiv.nextElementSibling;
             if(prev !== null && prev.className.indexOf('l-item') > -1) {
