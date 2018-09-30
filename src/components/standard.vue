@@ -231,19 +231,54 @@
       let sid = this.$router.history.current.query.shoppingCartId;
       if(sid) {
         this.sid = sid;
-        axios.post('http://www.thatime.me/baichengweb/Product/UploadTemplateData',{
+        axios.post('http://120.79.145.34:8818/Product/UploadTemplateData',{
           shoppingCartId:sid,
           admin:'deepmind',
           passwordHash:"9ec090ec31f3e72d50db4f914eaaa0a4"
         })
           .then(res=>{
-            console.log(res)
+            console.log(res);
             if(res.data.Success) {
               this.productData = Object.assign({},res.data.Data);
               if(this.productData.width > this.productData.materialMaxWidth || this.productData.height > this.productData.materialMaxHeight) {
                 this.modeType = 1;
                 this.canSelectMode = false;
               }
+
+              axios.get('/api/baicheng/GetImageCropInfo?shoppingCartId='+sid)
+                .then(res=>{
+                  console.log(res);
+                  if(res.data.code === 2000) {
+                    let data = res.data.result;
+                    this.viewData = Object.assign({},data);
+                    this.reversal = data.mirror;
+                    this.rotateClass = data.rotate;
+                    this.toBig = data.fill;
+                    if(data.x.length > 0) {
+                      data.x.map(item=>{
+                        this.larr.push({
+                          id:item,
+                          x:item - this.ballR,
+                          y:0
+                        })
+                      });
+                    }
+
+                    if(data.y.length > 0) {
+                      data.y.map(item=>{
+                        this.varr.push({
+                          id:item,
+                          x:0,
+                          y:item - this.ballR
+                        })
+                      });
+                    }
+
+                  }
+                })
+                .catch(err=>{
+
+                })
 
             }
           })
@@ -312,6 +347,7 @@
 
             let obj = {
               shoppingCartID:this.sid,
+              imageUrl:this.viewData.imageUrl,
               x:larr.map(item=>item.x + this.ballR),
               y:varr.map(item=>item.y + this.ballR),
               fill:this.toBig,
@@ -326,7 +362,9 @@
                 console.log(res);
                 this.waiting = false;
                 if(res.data.code === 2000) {
-                  window.location.href = this.productData.linkUrl + '&action=ok'
+                  console.log(this.productData.linkUrl + '&cwd=ok');
+                  window.location.href = this.productData.linkUrl + '&cwd=ok'
+
                 }
               })
               .catch(err=>{
@@ -405,7 +443,7 @@
 
         console.log(this.productData.linkUrl);
 
-        window.location.href=this.productData.linkUrl + '&action=cancel';
+        window.location.href=this.productData.linkUrl + '&cwd=cancel';
 
         //alert('将会关闭页面哦')
         //this.modalShow = false;
@@ -671,7 +709,7 @@
     border-radius:5px;
   }
   .bg_con{
-    width: 80px;
+    width: 60px;
   }
 
   .switch{
@@ -682,7 +720,7 @@
     display: block;
     padding: 1px;
     border-radius: 24px;
-    height: 22px;
+    height: 24px;
     margin-bottom: 15px;
     background-color: #ccc;
     cursor: pointer;
@@ -693,31 +731,34 @@
     content: '';
     display: block;
     border-radius: 24px;
-    height: 22px;
+    height: 24px;
     background-color: #ccc;
     -webkit-transform: scale(1, 1);
     -webkit-transition: all 0.3s ease;
+
   }
   label:after{
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
-    margin-top: -11px;
+    margin-top: -12px;
     margin-left: -27px;
-    width: 22px;
-    height: 22px;
-    border-radius: 22px;
+    width: 24px;
+    height: 24px;
+    border-radius: 24px;
     background-color: white;
-    box-shadow: 1px 1px 1px 1px rgba(0,0,0,0.08);
+    box-shadow: 0 0 10px #333;
     -webkit-transform: translateX(-12px);
     -webkit-transition: all 0.3s ease;
   }
   .switch:checked~label:after{
-    -webkit-transform: translateX(43px);
+    -webkit-transform: translateX(36px);
+    box-shadow: 0 0 10px green;
   }
   .switch:checked~label:before{
     background-color:green;
+
   }
 
   .data-container{
