@@ -28,18 +28,22 @@
                  }">
               <img :src="viewData.imageUrl" alt=""
                    :style="{
-                   'width':toBig?viewData.artBoxWidth+'px':'',
-                   'height':toBig?viewData.artBoxHeight + 'px':'',
+                   'width':toBig?(rotateClass/90%2===0?viewData.artBoxWidth:viewData.artBoxHeight)+'px':viewData.imageWidth + 'px',
+                   'height':toBig?(rotateClass/90%2===0?viewData.artBoxHeight :viewData.artBoxWidth)+ 'px':viewData.imageHeight + 'px',
                    'transform':reversal?'rotate('+rotateClass+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+rotateClass+'deg) translate(-50%,-50%)'
                    }" v-if="viewData.imageUrl!==''">
               <img src="static/images/add.png" alt="" style="cursor: pointer" v-else>
+              <img :src="viewData.modelUrl" alt="" v-if="viewData.editorType === 1">
             </div>
             <div class="operation"
                  :style="{
                  'width':viewData.trimBoxWidth+'px',
                  'height':viewData.trimBoxHeight + 'px',
-                 'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth -2.5)/2 + 'px',
-                 cursor: viewData.imageUrl!==''?'':'pointer'}" >
+                 'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth - 4)/2 + 'px',
+                 'margin-top':(viewData.artBoxHeight  - viewData.trimBoxHeight - 4)/2 + 'px',
+                 cursor: viewData.imageUrl!==''?'':'pointer'}"
+                 v-if="viewData.editorType !== 1"
+            >
               <div class="add-item add-l" @click="addItem(0)" :style="{'display':modeType === 1?'block':'none'}">
                 <div class="head">+</div>
               </div>
@@ -49,16 +53,16 @@
               <!--这是垂直方向（y轴）的-->
               <div class="v-item add-v" v-drag:y="dragV" v-for="(item,index) in varr" :style="{'top':item.y + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(0,index)" :id="item.id" :data-min="viewData.materialMinHeight" :data-max="viewData.materialMaxHeight" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
-                <div class="line" :style="{'width':viewData.artBoxWidth + 'px'}"></div>
+                <div class="line" :style="{'width':viewData.trimBoxWidth + 10 + 'px'}"></div>
                 <div class="count">{{(item.y + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
-                <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':sw + 35 + 'px'}">+</div>
+                <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':viewData.trimBoxWidth + 35 + 'px'}">+</div>
               </div>
               <!--这是水平方向（x轴）的-->
               <div class="l-item" v-drag:x="dragL" v-for="(item,index) in larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidth" :data-max="viewData.materialMaxWidth" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
-                <div class="line" :style="{'height':viewData.artBoxHeight + 'px'}"></div>
+                <div class="line" :style="{'height':viewData.trimBoxHeight + 10 + 'px'}"></div>
                 <div class="count">{{(item.x + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
-                <div class="del" v-if="lIndex === index" @click="delItem(1,index)" :style="{'top':sh + 35 + 'px'}">+</div>
+                <div class="del" v-if="lIndex === index" @click="delItem(1,index)" :style="{'top': viewData.trimBoxHeight + 35 + 'px'}">+</div>
               </div>
             </div>
           </div>
@@ -111,7 +115,7 @@
               </div>
             </div>
           </div>
-          <div class="data-item">
+          <div class="data-item" v-if="viewData.editorType !== 1">
             <div class="title"><b>模式</b></div>
             <div class="content">
               <iselect
@@ -304,8 +308,9 @@
       },
 
       saveSetting() {
+        let editorType = this.viewData.editorType
         if(!this.canSelectMode) {
-          if(this.larr.length === 0 || this.varr.length === 0) {
+          if( editorType !==1 &&  (this.larr.length === 0 || this.varr.length === 0)) {
             alert('需要画线操作，请进行画线操作')
           } else {
             let maxDistY = this.viewData.materialMaxHeight,
@@ -316,44 +321,53 @@
                 vlen = varr.length,
                 ballR = this.ballR;
 
-            for(let i = 0;i<llen-1;i++) {
+            if(editorType !==1) {
+              for(let i = 0;i<llen-1;i++) {
 
-              console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
-              if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
-                alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
+                if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
+                  alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                  return
+                }
+              }
+              console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
+              if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
+                alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
                 return
               }
-            }
-            console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
-            if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
-              alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
-              return
-            }
 
-            for(let i = 0;i<vlen-1;i++) {
+              for(let i = 0;i<vlen-1;i++) {
 
-              console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
-              if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
-                alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
+                if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
+                  alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                  return
+                }
+              }
+
+              if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
+                console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
+                alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
                 return
               }
+
             }
 
-            if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
-              console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
-              alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
-              return
-            }
 
             let obj = {
               shoppingCartID:this.sid,
               imageUrl:this.viewData.imageUrl,
-              x:larr.map(item=>item.x + this.ballR),
-              y:varr.map(item=>item.y + this.ballR),
               fill:this.toBig,
               rotate:this.rotateClass,
               mirror:this.reversal
             };
+
+            if(editorType !== 1) {
+              obj = Object.assign({},obj,{
+                x:larr.map(item=>item.x + this.ballR),
+                y:varr.map(item=>item.y + this.ballR)
+              })
+            }
 
             this.waiting = true;
 
@@ -362,8 +376,8 @@
                 console.log(res);
                 this.waiting = false;
                 if(res.data.code === 2000) {
-                  console.log(this.productData.linkUrl + '&cwd=ok');
-                  window.location.href = this.productData.linkUrl + '&cwd=ok'
+                  console.log(this.productData.linkUrl + '&cmd=ok');
+                  window.location.href = this.productData.linkUrl + '&cmd=ok'
 
                 }
               })
@@ -443,7 +457,7 @@
 
         console.log(this.productData.linkUrl);
 
-        window.location.href=this.productData.linkUrl + '&cwd=cancel';
+        window.location.href=this.productData.linkUrl + '&cmd=cancel';
 
         //alert('将会关闭页面哦')
         //this.modalShow = false;
@@ -963,7 +977,7 @@
     user-select: none;
     transform-origin: 50% 50%;
     transition:transform .5s ease;
-    //overflow: hidden;
+    overflow: hidden;
     background: #ccc;
     position: relative;
   }
@@ -994,8 +1008,7 @@
   .operation {
     border:2px dashed #f00;
     position: absolute;
-    top:10px;
-    margin-left:-2px;
+    top:0px;
     user-select: none;
   }
   .warp-container{
