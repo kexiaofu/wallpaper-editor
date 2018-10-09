@@ -425,9 +425,13 @@
               console.log(res);
               //this.waiting = false;
               if(res.data.code === 2000) {
-                this.viewData = res.data.result;
+                let data = res.data.result;
+                this.viewData = data;
+                this.reversal = false;
+                this.rotateClass = 0;
+                this.toBig = 0;
                 let image = new Image();
-                image.src= res.data.result.imageUrl;
+                image.src= data.imageUrl;
 
                 image.onload = () =>{
                   console.log('image is ok now')
