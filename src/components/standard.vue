@@ -16,7 +16,7 @@
           <img src="static/images/close.png" alt="">
         </div>
 
-        <div class="warp-container" v-if="true">
+        <div class="warp-container">
           <div class="warp" :style="{'width':viewData.artBoxWidth + 'px','height':viewData.artBoxHeight +  'px'}" v-if="viewData.imageUrl">
             <div class="img-container"
                  ref="container"
@@ -25,6 +25,7 @@
                    'height':viewData.trimBoxHeight +  'px',
                    'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth)/2 + 'px',
                    'top':(viewData.artBoxHeight  - viewData.trimBoxHeight)/2 + 'px'
+
                  }">
               <img :src="viewData.imageUrl" alt=""
                    :style="{
@@ -33,7 +34,7 @@
                    'transform':reversal?'rotate('+rotateClass+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+rotateClass+'deg) translate(-50%,-50%)'
                    }" v-if="viewData.imageUrl!==''">
               <img src="static/images/add.png" alt="" style="cursor: pointer" v-else>
-              <img :src="viewData.modelUrl" alt="" v-if="viewData.editorType === 1">
+              <img :src="viewData.photoUrl" alt="" v-if="viewData.type === 3">
             </div>
             <div class="operation"
                  :style="{
@@ -42,7 +43,7 @@
                  'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth - 4)/2 + 'px',
                  'margin-top':(viewData.artBoxHeight  - viewData.trimBoxHeight - 4)/2 + 'px',
                  cursor: viewData.imageUrl!==''?'':'pointer'}"
-                 v-if="viewData.editorType !== 1"
+                 v-if="viewData.type === 1"
             >
               <div class="add-item add-l" @click="addItem(0)" :style="{'display':modeType === 1?'block':'none'}">
                 <div class="head">+</div>
@@ -68,13 +69,13 @@
           </div>
         </div>
 
-        <div class="warp-container" v-else>
+        <!--<div class="warp-container" >
           <div class="warp" style="width: 750px;height: 750px;">
             <div class="img-container" style="height: 750px;">
               <img src="static/images/opacity.png" alt="" >
             </div>
           </div>
-        </div>
+        </div>-->
 
         <div class="data-container">
           <div class="data-item">
@@ -84,7 +85,8 @@
               <p>需求大小: {{ productData.width - (-productData.bleedingLine)}}cm X {{ productData.height - (-productData.bleedingLine)}}cm</p>
               <p>最大: {{ productData.materialMaxWidth }}cm X {{ productData.materialMaxHeight }}cm</p>
               <p>最小: {{ productData.materialMinWidth }}cm X {{ productData.materialMinHeight }}cm</p>
-              <p>DPI: {{ productData.dpi }}</p>
+              <p>需求DPI: {{ productData.dpi }}</p>
+              <p :style="{'color':productData.dpi > viewData.imageDpi?'red':'#999'}">实际DPI: {{ viewData.imageDpi }}</p>
             </div>
           </div>
           <div class="data-item">
@@ -115,7 +117,7 @@
               </div>
             </div>
           </div>
-          <div class="data-item" v-if="viewData.editorType !== 1">
+          <div class="data-item" v-if="viewData.type === 1">
             <div class="title"><b>模式</b></div>
             <div class="content">
               <iselect
@@ -211,7 +213,7 @@
 
         sid:'',
 
-        modeType:1,
+        modeType:0,
         imgs:['static/images/w1.jpg','static/images/w2.jpg'],
         modalShow:false,
         w:'http://192.168.2.157/BaiChengImage/20180926113654.jpg',
@@ -308,12 +310,13 @@
       },
 
       saveSetting() {
-        let editorType = this.viewData.editorType
-        if(!this.canSelectMode) {
-          if( editorType !==1 &&  (this.larr.length === 0 || this.varr.length === 0)) {
-            alert('需要画线操作，请进行画线操作')
-          } else {
-            let maxDistY = this.viewData.materialMaxHeight,
+        let type = this.viewData.type;
+        if(type === 1) {
+          if(!this.canSelectMode) {
+            if(this.larr.length === 0 || this.varr.length === 0) {
+              alert('需要画线操作，请进行画线操作')
+            } else {
+              let maxDistY = this.viewData.materialMaxHeight,
                 maxDistX = this.viewData.materialMaxWidth,
                 larr = this.larr,
                 varr = this.varr,
@@ -321,75 +324,76 @@
                 vlen = varr.length,
                 ballR = this.ballR;
 
-            if(editorType !==1) {
-              for(let i = 0;i<llen-1;i++) {
+              if(type !==1) {
+                for(let i = 0;i<llen-1;i++) {
 
-                console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
-                if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
-                  alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                  console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
+                  if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
+                    alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                    return
+                  }
+                }
+                console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
+                if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
+                  alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
                   return
                 }
-              }
-              console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
-              if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
-                alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
-                return
-              }
 
-              for(let i = 0;i<vlen-1;i++) {
+                for(let i = 0;i<vlen-1;i++) {
 
-                console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
-                if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
-                  alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                  console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
+                  if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
+                    alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                    return
+                  }
+                }
+
+                if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
+                  console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
+                  alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
                   return
                 }
-              }
 
-              if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
-                console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
-                alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
-                return
               }
 
             }
-
-
-            let obj = {
-              shoppingCartID:this.sid,
-              imageUrl:this.viewData.imageUrl,
-              fill:this.toBig,
-              rotate:this.rotateClass,
-              mirror:this.reversal
-            };
-
-            if(editorType !== 1) {
-              obj = Object.assign({},obj,{
-                x:larr.map(item=>item.x + this.ballR),
-                y:varr.map(item=>item.y + this.ballR)
-              })
-            }
-
-            this.waiting = true;
-
-            axios.post('api/baicheng/CropImage',obj)
-              .then(res=>{
-                console.log(res);
-                this.waiting = false;
-                if(res.data.code === 2000) {
-                  console.log(this.productData.linkUrl + '&cmd=ok');
-                  window.location.href = this.productData.linkUrl + '&cmd=ok'
-
-                }
-              })
-              .catch(err=>{
-                this.waiting = false;
-                console.log(err)
-              });
-
-            console.log(obj);
-
           }
         }
+
+        let obj = {
+          shoppingCartID:this.sid,
+          imageUrl:this.viewData.imageUrl,
+          fill:this.toBig,
+          rotate:this.rotateClass,
+          mirror:this.reversal
+        };
+
+        if(type === 1 && this.modeType === 1) {
+          obj = Object.assign({},obj,{
+            x:larr.map(item=>item.x + this.ballR),
+            y:varr.map(item=>item.y + this.ballR)
+          })
+        }
+
+        this.waiting = true;
+
+        axios.post('api/baicheng/CropImage',obj)
+          .then(res=>{
+            console.log(res);
+            this.waiting = false;
+            if(res.data.code === 2000) {
+              console.log(this.productData.linkUrl + '&cmd=ok');
+              window.location.href = this.productData.linkUrl + '&cmd=ok'
+
+            }
+          })
+          .catch(err=>{
+            this.waiting = false;
+            console.log(err)
+          });
+
+        console.log(obj);
+
       },
 
       toUploadFile() {
@@ -419,9 +423,17 @@
           axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid,formData)
             .then(res=>{
               console.log(res);
-              this.waiting = false;
+              //this.waiting = false;
               if(res.data.code === 2000) {
                 this.viewData = res.data.result;
+                let image = new Image();
+                image.src= res.data.result.imageUrl;
+
+                image.onload = () =>{
+                  console.log('image is ok now')
+                  this.waiting = false;
+                };
+
                 if(!this.canSelectMode) {
                   this.varr = [];
                   this.larr = [];
@@ -429,11 +441,13 @@
                   this.addItem(0,this.viewData.materialMaxHeight - this.ballR);
                 }
               } else {
-                alert('请求出了问题，请稍后再试！')
+                alert('请求出了问题，请稍后再试！');
+                this.waiting = false;
               }
             })
             .catch(err=>{
               this.waiting = false;
+              alert('上传出了问题，请稍后再试！')
               console.log(err)
             })
 
@@ -757,7 +771,7 @@
     top: 50%;
     left: 50%;
     margin-top: -12px;
-    margin-left: -27px;
+    margin-left: -23px;
     width: 24px;
     height: 24px;
     border-radius: 24px;
@@ -977,7 +991,7 @@
     user-select: none;
     transform-origin: 50% 50%;
     transition:transform .5s ease;
-    overflow: hidden;
+    //overflow: hidden;
     background: #ccc;
     position: relative;
   }
@@ -1021,6 +1035,8 @@
     background: #fff;
     //padding:10px;
     box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: 0 0 10px #999;
   }
   .warp-container>.operation{
     margin:0px auto;
