@@ -310,16 +310,17 @@
       },
 
       saveSetting() {
-        let type = this.viewData.type;
+        let type = this.viewData.type,
+            larr = this.larr,
+            varr = this.varr;
         if(type === 1) {
           if(!this.canSelectMode) {
-            if(this.larr.length === 0 || this.varr.length === 0) {
+            if(larr.length === 0 || varr.length === 0) {
               alert('需要画线操作，请进行画线操作')
+              return
             } else {
               let maxDistY = this.viewData.materialMaxHeight,
                 maxDistX = this.viewData.materialMaxWidth,
-                larr = this.larr,
-                varr = this.varr,
                 llen = larr.length,
                 vlen = varr.length,
                 ballR = this.ballR;
