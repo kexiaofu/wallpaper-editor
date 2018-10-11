@@ -16,8 +16,42 @@
           <img src="static/images/close.png" alt="">
         </div>
 
+        <div class="upload-area" v-if="viewData.hasOwnProperty('files')">
+
+          <div v-for="(file,index) in files" :class="['upload-btn',activeIndex === index?'active-box':'']" @click="toUploadFile(file.type,file.seq,index)">
+            <img :src="file.imageUrl !== null?file.imageUrl:'static/images/add.png'" @mouseenter="changeImg(index)" alt="" :style="{
+            'padding':file.imageUrl !== null?'0px':'15px',
+            width:file.imageUrl !== null?'60px':'30px',
+            height:file.imageUrl !== null?'60px':'30px'
+            }">
+            <p>{{ file.name }}</p>
+          </div>
+
+          <!--<div :class="['upload-btn',activeIndex === 11?'active-box':'']" @click="toUploadFile(1,1)">
+            <img src="static/images/add.png" alt="">
+            <p>正面</p>
+          </div>
+
+          <div :class="['upload-btn',activeIndex === 12?'active-box':'']" @click="toUploadFile(1,2)" v-if="viewData.printSides === 2">
+            <img src="static/images/add.png" alt="">
+            <p>反面</p>
+          </div>
+
+          <div v-if="viewData.type === 4" v-for="item in viewData.whiteInkNum" :class="['upload-btn',activeIndex === (20+item)?'active-box':'']"  >
+            <img src="static/images/add.png" alt="">
+            <p>白墨{{ item }}</p>
+          </div>
+
+          <div :class="['upload-btn',activeIndex === 31?'active-box':'']" @click="toUploadFile(3,1)" v-if="viewData.type === 4">
+            <img src="static/images/add.png" alt="">
+            <p>PDF</p>
+          </div>-->
+
+
+        </div>
+
         <div class="warp-container">
-          <div class="warp" :style="{'width':viewData.artBoxWidth + 'px','height':viewData.artBoxHeight +  'px'}" v-if="viewData.imageUrl">
+          <div class="warp" :style="{'width':viewData.artBoxWidth + 'px','height':viewData.artBoxHeight +  'px'}" v-if="files.length !== 0 && files[activeIndex].imageUrl">
             <div class="img-container"
                  ref="container"
                  :style="{
@@ -27,18 +61,18 @@
                    'top':(viewData.artBoxHeight  - viewData.trimBoxHeight)/2 + 'px'
 
                  }">
-              <img :src="viewData.imageUrl" alt=""
+              <img :src="files[activeIndex].imageUrl" alt=""
                    :style="{
-                   'width':toBig?(rotateClass/90%2===0?viewData.artBoxWidth:viewData.artBoxHeight)+'px':viewData.imageWidth + 'px',
-                   'height':toBig?(rotateClass/90%2===0?viewData.artBoxHeight :viewData.artBoxWidth)+ 'px':viewData.imageHeight + 'px',
-                   'transform':reversal?'rotate('+rotateClass+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+rotateClass+'deg) translate(-50%,-50%)'
+                   'width':files[activeIndex].fill?(rotateClass/90%2===0?viewData.artBoxWidth:viewData.artBoxHeight)+'px':files[activeIndex].imageWidth + 'px',
+                   'height':files[activeIndex].fill?(rotateClass/90%2===0?viewData.artBoxHeight :viewData.artBoxWidth)+ 'px':files[activeIndex].imageHeight + 'px',
+                   'transform':files[activeIndex].mirror?'rotate('+files[activeIndex].rotate+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+files[activeIndex].rotate+'deg) translate(-50%,-50%)'
                    }" v-if="viewData.imageUrl!==''">
               <img src="static/images/add.png" alt="" style="cursor: pointer" v-else>
               <img :src="viewData.photoUrl" alt="" v-if="viewData.type === 3">
             </div>
             <div class="operation"
                  :style="{
-                 'width':viewData.trimBoxWidth+'px',
+                 'width':viewData.trimBoxWidth +'px',
                  'height':viewData.trimBoxHeight + 'px',
                  'margin-left':(viewData.artBoxWidth  - viewData.trimBoxWidth - 4)/2 + 'px',
                  'margin-top':(viewData.artBoxHeight  - viewData.trimBoxHeight - 4)/2 + 'px',
@@ -52,14 +86,14 @@
                 <div class="head">+</div>
               </div>
               <!--这是垂直方向（y轴）的-->
-              <div class="v-item add-v" v-drag:y="dragV" v-for="(item,index) in varr" :style="{'top':item.y + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(0,index)" :id="item.id" :data-min="viewData.materialMinHeight" :data-max="viewData.materialMaxHeight" :data-r="ballR">
+              <div class="v-item add-v" v-drag:y="dragV" v-for="(item,index) in files[activeIndex].varr" :style="{'top':item.y + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(0,index)" :id="item.id" :data-min="viewData.materialMinHeightR" :data-max="viewData.materialMaxHeightR" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'width':viewData.trimBoxWidth + 10 + 'px'}"></div>
                 <div class="count">{{(item.y + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
                 <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':viewData.trimBoxWidth + 35 + 'px'}">+</div>
               </div>
               <!--这是水平方向（x轴）的-->
-              <div class="l-item" v-drag:x="dragL" v-for="(item,index) in larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidth" :data-max="viewData.materialMaxWidth" :data-r="ballR">
+              <div class="l-item" v-drag:x="dragL" v-for="(item,index) in files[activeIndex].larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidthR" :data-max="viewData.materialMaxWidthR" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'height':viewData.trimBoxHeight + 10 + 'px'}"></div>
                 <div class="count">{{(item.x + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
@@ -79,35 +113,35 @@
 
         <div class="data-container">
           <div class="data-item">
-            <div class="title"><b>{{ productData.productName }}</b></div>
+            <div class="title"><b>{{ viewData.productName }}</b></div>
             <div class="content">
               <!--<p>文件大小: -</p>-->
-              <p>需求大小: {{ productData.width - (-productData.bleedingLine)}}cm X {{ productData.height - (-productData.bleedingLine)}}cm</p>
-              <p>最大: {{ productData.materialMaxWidth }}cm X {{ productData.materialMaxHeight }}cm</p>
-              <p>最小: {{ productData.materialMinWidth }}cm X {{ productData.materialMinHeight }}cm</p>
-              <p>需求DPI: {{ productData.dpi }}</p>
-              <p :style="{'color':productData.dpi > viewData.imageDpi?'red':'#999'}">实际DPI: {{ viewData.imageDpi }}</p>
+              <p>需求大小: {{ viewData.width - (-viewData.bleedingLine)}}cm X {{ viewData.height - (-viewData.bleedingLine)}}cm</p>
+              <p>最大: {{ viewData.materialMaxWidth }}cm X {{ viewData.materialMaxHeight }}cm</p>
+              <p>最小: {{ viewData.materialMinWidth }}cm X {{ viewData.materialMinHeight }}cm</p>
+              <p>需求DPI: {{ viewData.dpi }}</p>
+              <p v-if="files.length !== 0" :style="{'color':viewData.dpi > files[activeIndex].imageDpi?'red':'#999'}">实际DPI: {{ files[activeIndex].imageDpi }}</p>
             </div>
           </div>
-          <div class="data-item">
+          <div class="data-item" v-if="files.length !== 0">
             <div class="title"><b>翻转</b></div>
             <div class="content">
               <div class="bg_con">
-                <input id="checked_1" type="checkbox" class="switch" v-model="reversal"/>
+                <input id="checked_1" type="checkbox" class="switch" v-model="files[activeIndex].mirror"/>
                 <label for="checked_1"></label>
               </div>
             </div>
           </div>
-          <div class="data-item">
+          <div class="data-item" v-if="files.length !== 0">
             <div class="title"><b>填充</b></div>
             <div class="content">
               <div class="bg_con">
-                <input id="checked_2" type="checkbox" class="switch" v-model="toBig"/>
+                <input id="checked_2" type="checkbox" class="switch" v-model="files[activeIndex].fill"/>
                 <label for="checked_2"></label>
               </div>
             </div>
           </div>
-          <div class="data-item">
+          <div class="data-item" v-if="files.length !== 0">
             <div class="title"><b>旋转</b></div>
             <div class="content">
               <div class="svg-container" @click="toRotateImg">
@@ -130,14 +164,14 @@
             </div>
           </div>
 
-          <div class="data-item" style="margin-top:50px;">
+          <!--<div class="data-item" style="margin-top:50px;">
             <div class="title"><b></b></div>
             <div class="content">
               <div class="btn" @click.stop="toUploadFile">上传图片</div>
             </div>
-          </div>
+          </div>-->
 
-          <div class="data-item" v-if="viewData.hasOwnProperty('imageUrl')">
+          <div class="data-item" v-if="viewData.hasOwnProperty('files') && viewData.files.length !== 0">
             <div class="title"><b></b></div>
             <div class="content">
               <div class="btn save" @click="saveSetting">保存</div>
@@ -211,6 +245,14 @@
 
         productData:{},
 
+        files:[],
+
+        imageUrl:'',
+
+        activeIndex:null,
+
+        dpi:0,
+
         sid:'',
 
         modeType:0,
@@ -237,59 +279,60 @@
       let sid = this.$router.history.current.query.shoppingCartId;
       if(sid) {
         this.sid = sid;
-        axios.post('http://120.79.145.34:8818/Product/UploadTemplateData',{
-          shoppingCartId:sid,
-          admin:'deepmind',
-          passwordHash:"9ec090ec31f3e72d50db4f914eaaa0a4"
-        })
+        axios.get('/api/baicheng/GetImageCropInfo?shoppingCartId='+sid)
           .then(res=>{
             console.log(res);
-            if(res.data.Success) {
-              this.productData = Object.assign({},res.data.Data);
-              if(this.productData.width > this.productData.materialMaxWidth || this.productData.height > this.productData.materialMaxHeight) {
+            if(res.data.code === 2000) {
+              let data = res.data.result;
+
+              if(data.width > data.materialMaxWidth || data.height > data.materialMaxHeight) {
                 this.modeType = 1;
                 this.canSelectMode = false;
               }
 
-              axios.get('/api/baicheng/GetImageCropInfo?shoppingCartId='+sid)
-                .then(res=>{
-                  console.log(res);
-                  if(res.data.code === 2000) {
-                    let data = res.data.result;
-                    this.viewData = Object.assign({},data);
-                    this.reversal = data.mirror;
-                    this.rotateClass = data.rotate;
-                    this.toBig = data.fill;
-                    if(data.x.length > 0) {
-                      data.x.map(item=>{
-                        this.larr.push({
-                          id:item,
-                          x:item - this.ballR,
-                          y:0
-                        })
-                      });
-                    }
 
-                    if(data.y.length > 0) {
-                      data.y.map(item=>{
-                        this.varr.push({
-                          id:item,
-                          x:0,
-                          y:item - this.ballR
-                        })
-                      });
-                    }
+              this.viewData = Object.assign({},data);
+              this.files = [].concat(data.files);
+              console.log(this.files);
+              let files = data.files;
 
-                  }
-                })
-                .catch(err=>{
+              if(files.length > 0) {
 
-                })
+                this.activeIndex = 0;
+
+                this.reversal = files[0].mirror;
+                this.rotateClass = files[0].rotate;
+                this.toBig = files[0].fill;
+                this.imageUrl = files[0].imageUrl;
+                this.dpi = files[0].imageDpi;
+
+                if(files[0].x.length > 0) {
+                  files[0].x.map(item=>{
+                    this.larr.push({
+                      id:item,
+                      x:item - this.ballR,
+                      y:0
+                    })
+                  });
+                }
+
+                if(files[0].y.length > 0) {
+                  files[0].y.map(item=>{
+                    this.varr.push({
+                      id:item,
+                      x:0,
+                      y:item - this.ballR
+                    })
+                  });
+                }
+
+              }
 
             }
           })
           .catch(err=>{
-            console.log(err)
+            alert(err);
+            return false;
           });
       }
 
@@ -305,24 +348,41 @@
 
     methods:{
 
+      changeImg(index) {
+        if(this.activeIndex !== index) {
+          this.activeIndex = index;
+        }
+
+      },
+
       compareNum(a,b,c) {
         return b-a>c;
       },
 
       saveSetting() {
-        let type = this.viewData.type,
-            larr = this.larr,
-            varr = this.varr;
-        if(type === 1) {
+
+        let files = this.files,
+            file = this.files[0];
+
+        for(let i=files.length-1;i>=0;i--) {
+          if(files[i].imageUrl === null) {
+            alert('请上传全部的素材，在保存！')
+            return;
+          }
+        }
+
+        if(this.viewData.type === 1) {
+          let larr = file.x,
+              varr = file.y;
           if(!this.canSelectMode) {
             if(larr.length === 0 || varr.length === 0) {
               alert('需要画线操作，请进行画线操作')
               return
             } else {
-              let maxDistY = this.viewData.materialMaxHeight,
-                maxDistX = this.viewData.materialMaxWidth,
-                llen = larr.length,
-                vlen = varr.length,
+              let maxDistY = this.viewData.materialMaxHeightR ,
+                maxDistX = this.viewData.materialMaxWidthR,
+                llen = file.x.length,
+                vlen = file.y.length,
                 ballR = this.ballR;
 
               if(type !==1) {
@@ -361,7 +421,7 @@
           }
         }
 
-        let obj = {
+        /*let obj = {
           shoppingCartID:this.sid,
           imageUrl:this.viewData.imageUrl,
           fill:this.toBig,
@@ -374,17 +434,17 @@
             x:larr.map(item=>item.x + this.ballR),
             y:varr.map(item=>item.y + this.ballR)
           })
-        }
+        }*/
 
         this.waiting = true;
 
-        axios.post('api/baicheng/CropImage',obj)
+        axios.post('api/baicheng/CropImage',this.files)
           .then(res=>{
             console.log(res);
             this.waiting = false;
             if(res.data.code === 2000) {
-              console.log(this.productData.linkUrl + '&cmd=ok');
-              window.location.href = this.productData.linkUrl + '&cmd=ok'
+              console.log(this.viewData.linkUrl + '&cmd=ok');
+              window.location.href = this.viewData.linkUrl + '&cmd=ok'
 
             }
           })
@@ -393,18 +453,21 @@
             console.log(err)
           });
 
-        console.log(obj);
+        console.log(this.files);
 
       },
 
-      toUploadFile() {
+      toUploadFile(type,seq,index) {
         let p =  this.$refs.uploadFile;
         if(document.querySelector('#uploadImg')) {
           p.removeChild(document.querySelector('#uploadImg'));
         }
+        this.activeIndex = index;
         let input = document.createElement('input');
         input.id = "uploadImg";
         input.name = "file";
+        input.setAttribute('data-type',type);
+        input.setAttribute('data-seq',seq);
         input.onchange = this.uploadFile;
         input.type = 'file';
         input.style.display = 'none';
@@ -416,23 +479,37 @@
         console.log('onchange',document.querySelector('.uploadFile'));
         let form = document.querySelector('.uploadFile'),
           flObj = document.querySelector('#uploadImg'),
-          file=flObj.files[0];
+          file=flObj.files[0],
+          type = flObj.getAttribute('data-type'),
+          seq = flObj.getAttribute('data-seq');
+
+        console.log(flObj.getAttribute('data-type'),flObj.getAttribute('data-seq'))
+
+        //return
+
         if(file.type.indexOf("image") >= 0) {
 
           let formData = new FormData(form);
           this.waiting = true;
-          axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid,formData)
+          axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid+'&type='+type+'&seq='+seq,formData)
             .then(res=>{
               console.log(res);
               //this.waiting = false;
               if(res.data.code === 2000) {
-                let data = res.data.result;
+                let data = res.data.result,
+                    file = data.files[this.activeIndex];
+
                 this.viewData = data;
-                this.reversal = false;
-                this.rotateClass = 0;
-                this.toBig = 0;
+                this.files = [].concat(data.files);
+
+                this.reversal = file.mirror;
+                this.rotateClass = file.rotate;
+                this.toBig = file.fill;
+                this.dpi = file.imageDpi;
+                this.imageUrl = file.imageUrl;
+
                 let image = new Image();
-                image.src= data.imageUrl;
+                image.src= file.imageUrl;
 
                 image.onload = () =>{
                   console.log('image is ok now')
@@ -442,8 +519,8 @@
                 if(!this.canSelectMode) {
                   this.varr = [];
                   this.larr = [];
-                  this.addItem(1,this.viewData.materialMaxWidth - this.ballR);
-                  this.addItem(0,this.viewData.materialMaxHeight - this.ballR);
+                  this.addItem(1,this.viewData.materialMaxWidthR - this.ballR);
+                  this.addItem(0,this.viewData.materialMaxHeightR - this.ballR);
                 }
               } else {
                 alert('请求出了问题，请稍后再试！');
@@ -467,9 +544,9 @@
       },
 
       toRotateImg() {
-        console.log(this.rotateClass);
-        this.rotateClass += 90;
-        this.rotateClass %= 360;
+        console.log(this.files[this.activeIndex].rotate);
+        this.files[this.activeIndex].rotate += 90;
+        this.files[this.activeIndex].rotate %= 360;
       },
 
       closeModal(){
@@ -567,24 +644,30 @@
       },
 
       addItem(code,pos=null) {
+        let file = this.files[this.activeIndex];
         if(code === 0) {
-          this.varr.unshift({
-            id:this.varr.length,
+          (!file.hasOwnProperty('varr')) && (file.varr = []);
+          file.varr.unshift({
+            id:file.varr.length,
             x:0,
-            y:pos===null?this.viewData.materialMinHeight - this.ballR:pos
+            y:pos===null?this.viewData.materialMinHeightR - this.ballR:pos
           })
         } else {
-          this.larr.unshift({
-            id:this.larr.length,
-            x:pos===null?this.viewData.materialMinWidth - this.ballR:pos,
+          (!file.hasOwnProperty('larr')) && (file.larr = []);
+          file.larr.unshift({
+            id:file.larr.length,
+            x:pos===null?this.viewData.materialMinWidthR - this.ballR:pos,
             y:0
           })
         }
+
+        //this.files[this.activeIndex] = Object.assign({},file);
+        this.files.splice(this.activeIndex,1,Object.assign({},file))
       },
 
       dragV(obj) {
         //console.log(obj);
-        let arr = this.varr;
+        let arr = this.files[this.activeIndex].varr;
 
         for(let i=arr.length-1;i>=0;i--) {
           if(arr[i].id === +obj.id) {
@@ -600,10 +683,10 @@
 
       dragL(obj) {
         //console.log(obj);
-        let arr = this.larr;
-
+        let arr = this.files[this.activeIndex].larr;
+        console.log(arr);
         for(let i=arr.length-1;i>=0;i--) {
-          console.log(arr[i].id === +obj.id)
+          console.log(arr[i].id , +obj.id)
           if(arr[i].id === +obj.id) {
             arr[i].x = obj.x;
             arr.splice(i,1,arr[i]);
@@ -620,6 +703,48 @@
 
 <style scoped>
   @import '../assets/loading.css';
+
+  .upload-area{
+    position: absolute;
+    left: 0;
+    height: 100%;
+    width: 100px;
+    background: #fff;
+    padding-top:50px;
+  }
+
+  .active-box{
+    color:#c7254e;
+  }
+  .active-box>img{
+    box-shadow: 0 0 10px #c7254e;
+  }
+
+  .upload-btn{
+    width: 60px;
+    height: 90px;
+    margin:10px auto;
+  }
+
+  .upload-btn:hover>img{
+    box-shadow: 0 0 20px red;
+  }
+
+  .upload-btn>img{
+    border:1px solid #cdcdcd;
+    border-radius:5px;
+    width: 30px;
+    height:30px;
+    padding:15px;
+    cursor: pointer;
+  }
+
+  .upload-btn>p{
+    text-align: center;
+    margin:0;
+    font-size: 16px;
+  }
+
   .waiting {
     position: fixed;
     left: 0;
@@ -1033,7 +1158,8 @@
   .warp-container{
     //background: #f00;
     position: relative;
-    width: calc(100% - 370px);
+    width: calc(100% - 470px);
+    margin-left:100px;
   }
   .warp-container>.warp{
     margin:100px auto;
