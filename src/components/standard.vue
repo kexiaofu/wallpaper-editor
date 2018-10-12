@@ -174,6 +174,13 @@
           <div class="data-item" v-if="viewData.hasOwnProperty('files') && viewData.files.length !== 0">
             <div class="title"><b></b></div>
             <div class="content">
+              <div class="btn reset" @click="resetFiles">重置</div>
+            </div>
+          </div>
+
+          <div class="data-item" v-if="viewData.hasOwnProperty('files') && viewData.files.length !== 0">
+            <div class="title"><b></b></div>
+            <div class="content">
               <div class="btn save" @click="saveSetting">保存</div>
             </div>
           </div>
@@ -284,50 +291,9 @@
             console.log(res);
             if(res.data.code === 2000) {
               let data = res.data.result;
-
-              if(data.width > data.materialMaxWidth || data.height > data.materialMaxHeight) {
-                this.modeType = 1;
-                this.canSelectMode = false;
-              }
-
-
-              this.viewData = Object.assign({},data);
-              this.files = [].concat(data.files);
-              console.log(this.files);
-              let files = data.files;
-
-              if(files.length > 0) {
-
-                this.activeIndex = 0;
-
-                this.reversal = files[0].mirror;
-                this.rotateClass = files[0].rotate;
-                this.toBig = files[0].fill;
-                this.imageUrl = files[0].imageUrl;
-                this.dpi = files[0].imageDpi;
-
-                if(files[0].x.length > 0) {
-                  files[0].x.map(item=>{
-                    this.larr.push({
-                      id:item,
-                      x:item - this.ballR,
-                      y:0
-                    })
-                  });
-                }
-
-                if(files[0].y.length > 0) {
-                  files[0].y.map(item=>{
-                    this.varr.push({
-                      id:item,
-                      x:0,
-                      y:item - this.ballR
-                    })
-                  });
-                }
-
-              }
-
+              this.getInfo(data);
+            } else {
+              alert(res.data.msg)
             }
           })
           .catch(err=>{
@@ -348,9 +314,146 @@
 
     methods:{
 
+      getInfo(data) {
+        let files = data.files;
+        console.log(data.type === 1 , data.width > data.materialMaxWidth , data.height > data.materialMaxHeight)
+        if(data.type === 1 && (data.width > data.materialMaxWidth || data.height > data.materialMaxHeight)) {
+          this.modeType = 1;
+          this.canSelectMode = false;
+        }
+
+
+        this.viewData = Object.assign({},data);
+
+        console.log(this.files);
+
+
+        this.activeIndex = 0;
+
+        files.splice(0,1,this.syncBothSide(files[0]))
+
+        if(data.printSides > 1) {
+          files.splice(1,1,this.syncBothSide(files[1]))
+        }
+
+        this.files = [].concat(data.files);
+      },
+
+      resetFiles() {
+        this.waiting = true;
+        axios.get('api/baicheng/ClearCache?shoppingCartId='+this.sid)
+          .then(res=>{
+            if(res.data.code === 2000 ) {
+              this.waiting = false;
+              this.getInfo(res.data.result)
+            } else {
+              alert(res.data.msg)
+            }
+          })
+          .catch(err=>{
+            alert(err)
+          })
+      },
+
+      syncBothSide(file) {
+        if(file.x.length > 0) {
+          let larr = file.x.map((x,index)=>{
+            return {
+              id:index,
+              x:x,
+              y:0
+            }
+          });
+          file = Object.assign({},file,{larr:larr})
+        }
+        if(file.y.length > 0) {
+         let varr = file.y.map((y,index)=>{
+           return {
+             id:index,
+             x:0,
+             y:y
+           }
+         });
+         file = Object.assign({},file,{varr:varr})
+        }
+        return file;
+      },
+
+      syncBackSide(file) {
+        let r = this.ballR,
+          xw = this.viewData.trimBoxWidth - 2 * r,
+          yh = this.viewData.trimBoxHeight - 2 * r;//需要减去2个球的半径
+
+        console.log(file.type === 1 , file.seq === 2, this.files[0]);
+
+        if(file.type === 1 && file.seq === 2 && this.viewData.printSides > 1) {
+          if(this.files[0].hasOwnProperty('larr') && this.files[0].larr.length > 0) {
+            let arr = this.files[0].larr.map(x=>{
+              return {
+                id:x.id,
+                x:xw - x.x,
+                y:0
+              }
+            });
+            arr = arr.reverse();
+            file = Object.assign({},file,{larr:arr});
+            this.files.splice(1,1,file);
+            console.log(file)
+          }
+
+          if(this.files[0].hasOwnProperty('varr') && this.files[0].varr.length > 0) {
+            let arr = this.files[0].varr.map(y=>{
+              return {
+                id:y.id,
+                x:0,
+                y:yh - y.y
+              }
+            });
+            arr = arr.reverse();
+            file = Object.assign({},file,{varr:arr});
+            this.files.splice(1,1,file);
+            console.log(file)
+          }
+
+        }
+
+        if(file.type === 1 && file.seq === 1 && this.viewData.printSides > 1) {
+          if(this.files[1].hasOwnProperty('larr') && this.files[1].larr.length > 0) {
+            let arr = this.files[1].larr.map(x=>{
+              return {
+                id:x.id,
+                x:xw - x.x,
+                y:0
+              }
+            });
+            arr = arr.reverse();
+            file = Object.assign({},file,{larr:arr});
+            this.files.splice(0,1,file);
+            console.log(file)
+          }
+
+          if(this.files[1].hasOwnProperty('varr') && this.files[1].varr.length > 0) {
+            let arr = this.files[1].varr.map(y=>{
+              return {
+                id:y.id,
+                x:0,
+                y:yh - y.y
+              }
+            });
+            arr = arr.reverse();
+            file = Object.assign({},file,{varr:arr});
+            this.files.splice(0,1,file);
+            console.log(file)
+          }
+
+        }
+      },
+
       changeImg(index) {
         if(this.activeIndex !== index) {
           this.activeIndex = index;
+
+          this.syncBackSide(this.files[index]);
         }
 
       },
@@ -359,68 +462,116 @@
         return b-a>c;
       },
 
+      fileArgIsOk(file) {
+        let viewData = this.viewData,
+          larr = file.hasOwnProperty('larr')?file.larr:[],
+          varr = file.hasOwnProperty('varr')?file.varr:[],
+          status = true;
+        console.log(larr,varr,file);
+        if(viewData.type === 1) {
+          if(larr.length === 0 || varr.length === 0) {
+            alert('需要画线操作，请进行画线操作'+file.imageName);
+            status =  false
+          } else {
+            let maxDistY = viewData.materialMaxHeightR ,
+              maxDistX = viewData.materialMaxWidthR,
+              llen = file.x.length,
+              vlen = file.y.length,
+              ballR = this.ballR;
+
+            for(let i = 0;i<llen-1;i++) {
+
+              console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
+              if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
+                alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                status = false;
+              }
+            }
+            console.log(larr[llen-1].x + ballR,viewData.trimBoxWidth,maxDistX)
+            if(this.compareNum(larr[llen-1].x + ballR,viewData.trimBoxWidth,maxDistX)) {
+              alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
+              status =  false
+            }
+
+            for(let i = 0;i<vlen-1;i++) {
+
+              console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
+              if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
+                alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
+                status = false
+              }
+            }
+
+            if(this.compareNum(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistX)) {
+              console.log(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistX)
+              alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
+              status =  false
+            }
+
+          }
+        }
+
+        return status;
+
+      },
+
       saveSetting() {
 
-        let files = this.files,
-            file = this.files[0];
+        let files = this.files;
 
         for(let i=files.length-1;i>=0;i--) {
           if(files[i].imageUrl === null) {
-            alert('请上传全部的素材，在保存！')
+            alert('请上传全部的素材，在保存！');
             return;
           }
         }
 
         if(this.viewData.type === 1) {
-          let larr = file.x,
-              varr = file.y;
-          if(!this.canSelectMode) {
-            if(larr.length === 0 || varr.length === 0) {
-              alert('需要画线操作，请进行画线操作')
-              return
-            } else {
-              let maxDistY = this.viewData.materialMaxHeightR ,
-                maxDistX = this.viewData.materialMaxWidthR,
-                llen = file.x.length,
-                vlen = file.y.length,
-                ballR = this.ballR;
+          let xArr = [], yArr = [];
+          if(this.viewData.printSides === 1) {
 
-              if(type !==1) {
-                for(let i = 0;i<llen-1;i++) {
+            if(files[0].hasOwnProperty('larr')) {
+              xArr = files[0].larr.map(x=>{
+                return x.x
+              });
+              files[0] = Object.assign({},files[0],{x:xArr});
+            }
+            if(files[0].hasOwnProperty('varr')) {
+              yArr = files[0].varr.map(y=>{
+                return y.y
+              });
+              files[0] = Object.assign({},files[0],{y:yArr});
+            }
+            files.splice(0,1,files[0])
+          } else {
 
-                  console.log(larr[i].x + ballR,larr[i+1].x,maxDistX,this.compareNum(larr[i].x,larr[i+1].x,maxDistX));
-                  if(this.compareNum(larr[i].x + ballR,larr[i+1].x,maxDistX)) {
-                    alert('水平方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
-                    return
-                  }
-                }
-                console.log(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)
-                if(this.compareNum(larr[llen-1].x + ballR,this.viewData.trimBoxWidth,maxDistX)) {
-                  alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
-                  return
-                }
+            if(files[0].hasOwnProperty('larr') || files[0].hasOwnProperty('varr')) {
+              this.syncBackSide(files[1])
+            }
 
-                for(let i = 0;i<vlen-1;i++) {
-
-                  console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
-                  if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
-                    alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
-                    return
-                  }
-                }
-
-                if(this.compareNum(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)) {
-                  console.log(varr[vlen-1].y + ballR,this.viewData.trimBoxHeight,maxDistX)
-                  alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
-                  return
-                }
-
+            for(let i=0;i<2;i++) {
+              if(files[i].hasOwnProperty('larr')) {
+                xArr = files[i].larr.map(x=>{
+                  return x.x
+                });
+                files[i] = Object.assign({},files[i],{x:xArr});
               }
+              if(files[i].hasOwnProperty('varr')) {
+                yArr = files[i].varr.map(y=>{
+                  return y.y
+                });
 
+                files[i] = Object.assign({},files[i],{y:yArr});
+              }
+              files.splice(i,1,files[i])
             }
           }
         }
 
+        if(!this.fileArgIsOk(files[0])) return;
+
+        console.log(files);
+        //return
         /*let obj = {
           shoppingCartID:this.sid,
           imageUrl:this.viewData.imageUrl,
@@ -438,7 +589,7 @@
 
         this.waiting = true;
 
-        axios.post('api/baicheng/CropImage',this.files)
+        axios.post('api/baicheng/CropImage',files)
           .then(res=>{
             console.log(res);
             this.waiting = false;
@@ -446,6 +597,8 @@
               console.log(this.viewData.linkUrl + '&cmd=ok');
               window.location.href = this.viewData.linkUrl + '&cmd=ok'
 
+            } else {
+              alert(res.data.msg);
             }
           })
           .catch(err=>{
@@ -502,28 +655,25 @@
                 this.viewData = data;
                 this.files = [].concat(data.files);
 
-                this.reversal = file.mirror;
-                this.rotateClass = file.rotate;
-                this.toBig = file.fill;
-                this.dpi = file.imageDpi;
-                this.imageUrl = file.imageUrl;
+                if(data.type === 1 && (data.width > data.materialMaxWidth || data.height > data.materialMaxHeight)) {
+                  this.modeType = 1;
+                  this.canSelectMode = false;
+                }
 
                 let image = new Image();
                 image.src= file.imageUrl;
 
                 image.onload = () =>{
-                  console.log('image is ok now')
+                  console.log('image is ok now');
                   this.waiting = false;
                 };
 
-                if(!this.canSelectMode) {
-                  this.varr = [];
-                  this.larr = [];
-                  this.addItem(1,this.viewData.materialMaxWidthR - this.ballR);
-                  this.addItem(0,this.viewData.materialMaxHeightR - this.ballR);
+                if(this.files[0].type === 1 && this.files[0].seq === 1) {
+                  this.addItem(1,data.materialMaxWidthR - this.ballR);
+                  this.addItem(0,data.materialMaxHeightR - this.ballR);
                 }
               } else {
-                alert('请求出了问题，请稍后再试！');
+                alert(res.data.msg);
                 this.waiting = false;
               }
             })
@@ -645,6 +795,7 @@
 
       addItem(code,pos=null) {
         let file = this.files[this.activeIndex];
+        console.log(file,code,pos);
         if(code === 0) {
           (!file.hasOwnProperty('varr')) && (file.varr = []);
           file.varr.unshift({
@@ -916,7 +1067,6 @@
   }
   .switch:checked~label:before{
     background-color:green;
-
   }
 
   .data-container{
