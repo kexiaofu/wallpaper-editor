@@ -63,13 +63,16 @@
                  }">
               <img :src="files[activeIndex].imageUrl" alt=""
                    :style="{
-                   'width':files[activeIndex].fill?(rotateClass/90%2===0?viewData.artBoxWidth:viewData.artBoxHeight)+'px':files[activeIndex].imageWidth + 'px',
-                   'height':files[activeIndex].fill?(rotateClass/90%2===0?viewData.artBoxHeight :viewData.artBoxWidth)+ 'px':files[activeIndex].imageHeight + 'px',
+                   'width':files[activeIndex].fill?(files[activeIndex].rotate/90%2===0?viewData.artBoxWidth:viewData.artBoxHeight)+'px':files[activeIndex].imageWidthR + 'px',
+                   'height':files[activeIndex].fill?(files[activeIndex].rotate/90%2===0?viewData.artBoxHeight :viewData.artBoxWidth)+ 'px':files[activeIndex].imageHeightR + 'px',
                    'transform':files[activeIndex].mirror?'rotate('+files[activeIndex].rotate+'deg) scaleX(-1) translate(-50%,-50%)':'rotate('+files[activeIndex].rotate+'deg) translate(-50%,-50%)'
-                   }" v-if="viewData.imageUrl!==''">
+                   }" v-if="viewData.imageUrl!== null">
               <img src="static/images/add.png" alt="" style="cursor: pointer" v-else>
               <img :src="viewData.photoUrl" alt="" v-if="viewData.type === 3">
             </div>
+            <!--<div class="no-img-tips" >
+              请上传图片
+            </div>-->
             <div class="operation"
                  :style="{
                  'width':viewData.trimBoxWidth +'px',
@@ -89,14 +92,14 @@
               <div class="v-item add-v" v-drag:y="dragV" v-for="(item,index) in files[activeIndex].varr" :style="{'top':item.y + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(0,index)" :id="item.id" :data-min="viewData.materialMinHeightR" :data-max="viewData.materialMaxHeightR" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'width':viewData.trimBoxWidth + 10 + 'px'}"></div>
-                <div class="count">{{(item.y + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
+                <div class="count">{{(item.y + ballR)/viewData.proportion * 25.4 / viewData.dpi / 10 | fixed1}}cm</div>
                 <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':viewData.trimBoxWidth + 35 + 'px'}">+</div>
               </div>
               <!--这是水平方向（x轴）的-->
               <div class="l-item" v-drag:x="dragL" v-for="(item,index) in files[activeIndex].larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidthR" :data-max="viewData.materialMaxWidthR" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'height':viewData.trimBoxHeight + 10 + 'px'}"></div>
-                <div class="count">{{(item.x + ballR)/viewData.proportion * .3528 / 10 | fixed1}}cm</div>
+                <div class="count">{{(item.x + ballR)/viewData.proportion * 25.4 / viewData.dpi / 10 | fixed1}}cm</div>
                 <div class="del" v-if="lIndex === index" @click="delItem(1,index)" :style="{'top': viewData.trimBoxHeight + 35 + 'px'}">+</div>
               </div>
             </div>
@@ -116,15 +119,17 @@
             <div class="title"><b>{{ viewData.productName }}</b></div>
             <div class="content">
               <!--<p>文件大小: -</p>-->
-              <p>需求大小: {{ viewData.width - (-viewData.bleedingLine)}}cm X {{ viewData.height - (-viewData.bleedingLine)}}cm</p>
-              <p>最大: {{ viewData.materialMaxWidth }}cm X {{ viewData.materialMaxHeight }}cm</p>
-              <p>最小: {{ viewData.materialMinWidth }}cm X {{ viewData.materialMinHeight }}cm</p>
-              <p>需求DPI: {{ viewData.dpi }}</p>
-              <p v-if="files.length !== 0" :style="{'color':viewData.dpi > files[activeIndex].imageDpi?'red':'#999'}">实际DPI: {{ files[activeIndex].imageDpi }}</p>
+              <p>制作大小: {{ viewData.width}}cm X {{ viewData.height}}cm</p>
+              <p>出血大小: {{ viewData.bleedingLine}}cm X {{ viewData.bleedingLine}}cm</p>
+              <p v-if="viewData.type === 1">分割最大: {{ viewData.materialMaxWidth }}cm X {{ viewData.materialMaxHeight }}cm</p>
+              <p v-if="viewData.type === 1">分割最小: {{ viewData.materialMinWidth }}cm X {{ viewData.materialMinHeight }}cm</p>
+              <p v-if="files.length > 0 && files[activeIndex].imageUrl !== ''">图片大小: {{ files[activeIndex].imageWidth}}cm X {{ files[activeIndex].imageHeight}}cm</p>
+              <p>图片要求DPI: {{ viewData.dpi }}</p>
+              <p v-if="files.length !== 0" :style="{'color':viewData.dpi > files[activeIndex].imageDpi?'red':'#999'}">当前图片DPI: {{ files[activeIndex].imageDpi }}</p>
             </div>
           </div>
           <div class="data-item" v-if="files.length !== 0">
-            <div class="title"><b>翻转</b></div>
+            <div class="title"><b>镜像</b></div>
             <div class="content">
               <div class="bg_con">
                 <input id="checked_1" type="checkbox" class="switch" v-model="files[activeIndex].mirror"/>
@@ -142,7 +147,7 @@
             </div>
           </div>
           <div class="data-item" v-if="files.length !== 0">
-            <div class="title"><b>旋转</b></div>
+            <div class="title"><b>旋转({{files[activeIndex].rotate}}°)</b></div>
             <div class="content">
               <div class="svg-container" @click="toRotateImg">
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -356,11 +361,12 @@
       },
 
       syncBothSide(file) {
+        let ballR = this.ballR;
         if(file.x.length > 0) {
           let larr = file.x.map((x,index)=>{
             return {
               id:index,
-              x:x,
+              x:x - ballR,
               y:0
             }
           });
@@ -371,11 +377,12 @@
            return {
              id:index,
              x:0,
-             y:y
+             y:y - ballR
            }
          });
          file = Object.assign({},file,{varr:varr})
         }
+        console.log(file);
         return file;
       },
 
@@ -517,7 +524,8 @@
 
       saveSetting() {
 
-        let files = this.files;
+        let files = this.files,
+          ballR = this.ballR;
 
         for(let i=files.length-1;i>=0;i--) {
           if(files[i].imageUrl === null) {
@@ -532,13 +540,13 @@
 
             if(files[0].hasOwnProperty('larr')) {
               xArr = files[0].larr.map(x=>{
-                return x.x
+                return x.x + ballR
               });
               files[0] = Object.assign({},files[0],{x:xArr});
             }
             if(files[0].hasOwnProperty('varr')) {
               yArr = files[0].varr.map(y=>{
-                return y.y
+                return y.y + ballR
               });
               files[0] = Object.assign({},files[0],{y:yArr});
             }
@@ -552,13 +560,13 @@
             for(let i=0;i<2;i++) {
               if(files[i].hasOwnProperty('larr')) {
                 xArr = files[i].larr.map(x=>{
-                  return x.x
+                  return x.x + ballR
                 });
                 files[i] = Object.assign({},files[i],{x:xArr});
               }
               if(files[i].hasOwnProperty('varr')) {
                 yArr = files[i].varr.map(y=>{
-                  return y.y
+                  return y.y + ballR
                 });
 
                 files[i] = Object.assign({},files[i],{y:yArr});
@@ -636,56 +644,50 @@
           type = flObj.getAttribute('data-type'),
           seq = flObj.getAttribute('data-seq');
 
-        console.log(flObj.getAttribute('data-type'),flObj.getAttribute('data-seq'))
+        console.log(flObj.getAttribute('data-type'),flObj.getAttribute('data-seq'),file);
 
         //return
+        let formData = new FormData(form);
+        this.waiting = true;
+        axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid+'&type='+type+'&seq='+seq,formData)
+          .then(res=>{
+            console.log(res);
+            //this.waiting = false;
+            if(res.data.code === 2000) {
+              let data = res.data.result,
+                file = data.files[this.activeIndex];
 
-        if(file.type.indexOf("image") >= 0) {
+              this.viewData = data;
+              this.files = [].concat(data.files);
 
-          let formData = new FormData(form);
-          this.waiting = true;
-          axios.post('/api/baicheng/uploadfile?shoppingCartId='+this.sid+'&type='+type+'&seq='+seq,formData)
-            .then(res=>{
-              console.log(res);
-              //this.waiting = false;
-              if(res.data.code === 2000) {
-                let data = res.data.result,
-                    file = data.files[this.activeIndex];
-
-                this.viewData = data;
-                this.files = [].concat(data.files);
-
-                if(data.type === 1 && (data.width > data.materialMaxWidth || data.height > data.materialMaxHeight)) {
-                  this.modeType = 1;
-                  this.canSelectMode = false;
-                }
-
-                let image = new Image();
-                image.src= file.imageUrl;
-
-                image.onload = () =>{
-                  console.log('image is ok now');
-                  this.waiting = false;
-                };
-
-                if(this.files[0].type === 1 && this.files[0].seq === 1) {
-                  this.addItem(1,data.materialMaxWidthR - this.ballR);
-                  this.addItem(0,data.materialMaxHeightR - this.ballR);
-                }
-              } else {
-                alert(res.data.msg);
-                this.waiting = false;
+              if(data.type === 1 && (data.width > data.materialMaxWidth || data.height > data.materialMaxHeight)) {
+                this.modeType = 1;
+                this.canSelectMode = false;
               }
-            })
-            .catch(err=>{
-              this.waiting = false;
-              alert('上传出了问题，请稍后再试！')
-              console.log(err)
-            })
 
-        } else {
-          alert('请上传图片资源')
-        }
+              let image = new Image();
+              image.src= file.imageUrl;
+
+              image.onload = () =>{
+                console.log('image is ok now');
+                this.waiting = false;
+              };
+
+              if(this.files[0].type === 1 && this.files[0].seq === 1) {
+                data.width > data.materialMaxWidth && this.addItem(1,data.materialMaxWidthR - this.ballR);
+
+                data.height > data.materialMaxHeight && this.addItem(0,data.materialMaxHeightR - this.ballR);
+              }
+            } else {
+              alert(res.data.msg);
+              this.waiting = false;
+            }
+          })
+          .catch(err=>{
+            this.waiting = false;
+            alert('上传出了问题，请稍后再试！');
+            console.log(err)
+          })
 
       },
 
@@ -773,14 +775,15 @@
 
       delItem(code,index) {
         if(code === 0) {
-          this.varr.splice(index,1);
+          this.files[this.activeIndex].varr.splice(index,1);
           this.vIndex = null;
           console.log(this.vIndex)
         } else if(code === 1) {
-          this.larr.splice(index,1);
+          this.files[this.activeIndex].larr.splice(index,1);
           this.lIndex = null;
           console.log(this.lIndex)
         }
+        this.files.splice(this.activeIndex,1,this.files[this.activeIndex]);
       },
 
       toDelItem(code,index) {
