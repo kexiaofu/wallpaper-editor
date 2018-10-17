@@ -200,7 +200,6 @@
           <div class="loader"></div>
           <p>please waiting!</p>
         </div>
-
       </div>
     </div>
 </template>
@@ -255,7 +254,7 @@
           "proportion":0.264583319*/
         },
 
-        productData:{},
+        //productData:{},
 
         files:[],
 
@@ -703,9 +702,9 @@
 
       closeModal(){
 
-        console.log(this.productData.linkUrl);
+        console.log(this.viewData.linkUrl);
 
-        window.location.href=this.productData.linkUrl + '&cmd=cancel';
+        window.location.href=this.viewData.linkUrl + '&cmd=cancel';
 
         //alert('将会关闭页面哦')
         //this.modalShow = false;
@@ -1101,7 +1100,7 @@
   }
 
   .data-container p{
-    color:#999;
+    color:#005db8;
     font-size: 16px;
     word-break: break-all;
     padding:5px 0;
