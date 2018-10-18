@@ -96,6 +96,7 @@
                 <div class="del" v-if="vIndex === index" @click="delItem(0,index)" :style="{'left':viewData.trimBoxWidth + 35 + 'px'}">+</div>
               </div>
               <!--这是水平方向（x轴）的-->
+              <!--{{(item.x + ballR)/viewData.proportion * 25.4 / viewData.dpi / 10 | fixed1}}-->
               <div class="l-item" v-drag:x="dragL" v-for="(item,index) in files[activeIndex].larr" :style="{'left':item.x + 'px','display':modeType === 1?'block':'none'}" @click="toDelItem(1,index)" :id="item.id" :data-min="viewData.materialMinWidthR" :data-max="viewData.materialMaxWidthR" :data-r="ballR">
                 <div class="head" :style="{'width':ballR * 2 + 'px','height':ballR * 2 + 'px'}"></div>
                 <div class="line" :style="{'height':viewData.trimBoxHeight + 10 + 'px'}"></div>
@@ -119,13 +120,13 @@
             <div class="title"><b>{{ viewData.productName }}</b></div>
             <div class="content">
               <!--<p>文件大小: -</p>-->
-              <p>制作大小: {{ viewData.width}}cm X {{ viewData.height}}cm</p>
-              <p>出血大小: {{ viewData.bleedingLine}}cm X {{ viewData.bleedingLine}}cm</p>
-              <p v-if="viewData.type === 1">分割最大: {{ viewData.materialMaxWidth }}cm X {{ viewData.materialMaxHeight }}cm</p>
-              <p v-if="viewData.type === 1">分割最小: {{ viewData.materialMinWidth }}cm X {{ viewData.materialMinHeight }}cm</p>
-              <p v-if="files.length > 0 && files[activeIndex].imageUrl !== ''">图片大小: {{ files[activeIndex].imageWidth}}cm X {{ files[activeIndex].imageHeight}}cm</p>
+              <p>制作大小: 宽: {{ viewData.width}}cm 高: {{ viewData.height}}cm</p>
+              <p>出血大小: 宽: {{ viewData.bleedingLine}}cm  高: {{ viewData.bleedingLine}}cm</p>
+              <p v-if="viewData.type === 1">分割最大: 宽: {{ viewData.materialMaxWidth }}cm  高: {{ viewData.materialMaxHeight }}cm</p>
+              <p v-if="viewData.type === 1">分割最小: 宽: {{ viewData.materialMinWidth }}cm  高: {{ viewData.materialMinHeight }}cm</p>
+              <p v-if="files.length > 0 && files[activeIndex].imageUrl !== ''">图片大小: 宽: {{ files[activeIndex].imageWidth}}cm  高: {{ files[activeIndex].imageHeight}}cm</p>
               <p>图片要求DPI: {{ viewData.dpi }}</p>
-              <p v-if="files.length !== 0" :style="{'color':viewData.dpi > files[activeIndex].imageDpi?'red':'#999'}">当前图片DPI: {{ files[activeIndex].imageDpi }}</p>
+              <p v-if="files.length !== 0" :style="{'color':viewData.dpi > files[activeIndex].imageDpi?'red':''}">当前图片DPI: {{ files[activeIndex].imageDpi }}</p>
             </div>
           </div>
           <div class="data-item" v-if="files.length !== 0">
@@ -218,6 +219,10 @@
     filters:{
       fixed1(val) {
         return val.toFixed(1)
+      },
+
+      parseInt10(val){
+        return parseInt(val,10);
       }
     },
 
@@ -493,7 +498,7 @@
                 status = false;
               }
             }
-            console.log(larr[llen-1].x + ballR,viewData.trimBoxWidth,maxDistX)
+            console.log(larr[llen-1].x + ballR,viewData.trimBoxWidth)
             if(this.compareNum(larr[llen-1].x + ballR,viewData.trimBoxWidth,maxDistX)) {
               alert('水平方向的最后一条画线与边框距离大于预设的最大距离');
               status =  false
@@ -501,15 +506,15 @@
 
             for(let i = 0;i<vlen-1;i++) {
 
-              console.log(varr[i].y + ballR,varr[i+1].y,maxDistX,this.compareNum(varr[i].y,varr[i+1].y,maxDistX));
-              if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistX)) {
+              console.log(varr[i].y + ballR,varr[i+1].y,maxDistY,this.compareNum(varr[i].y,varr[i+1].y,maxDistY));
+              if(this.compareNum(varr[i].y + ballR,varr[i+1].y,maxDistY)) {
                 alert('垂直方向的第'+(i-(-1))+'条画线距离大于预设的最大距离');
                 status = false
               }
             }
 
-            if(this.compareNum(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistX)) {
-              console.log(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistX)
+            if(this.compareNum(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistY)) {
+              console.log(varr[vlen-1].y + ballR,viewData.trimBoxHeight,maxDistY);
               alert('垂直方向的最后一条画线与边框距离大于预设的最大距离');
               status =  false
             }
@@ -676,9 +681,26 @@
 
               if(this.files[0].type === 1 && this.files[0].seq === 1) {
                 if(file.x.length === 0 && file.y.length === 0) {
-                  data.width > data.materialMaxWidth && this.addItem(1,data.materialMaxWidthR - this.ballR);
 
-                  data.height > data.materialMaxHeight && this.addItem(0,data.materialMaxHeightR - this.ballR);
+                  if(data.width > data.materialMaxWidth) {
+                    let count = Math.ceil(data.width / data.materialMaxWidth);
+                    console.log(count);
+                    for(let i = count-1;i>=1;i--) {
+                      console.log(i * data.materialMaxWidthR)
+                      this.addItem(1,i * data.materialMaxWidthR - this.ballR);
+                    }
+                  }
+
+                  if(data.height > data.materialMaxHeight) {
+                    let count = Math.ceil(data.height / data.materialMaxHeight);
+                    console.log(count);
+                    for(let i = count-1;i>=1;i--) {
+                      console.log(i * data.materialMaxHeightR)
+                      this.addItem(0,i * data.materialMaxHeightR - this.ballR);
+                    }
+                    //this.addItem(0,data.materialMaxHeightR - this.ballR);
+                  }
+
                 } else {
                   this.files.splice(0,1,this.syncBothSide(file));
                 }
@@ -1106,7 +1128,7 @@
     cursor: pointer;
   }
 
-  .data-container p{
+  .content>p{
     color:#005db8;
     font-size: 16px;
     word-break: break-all;

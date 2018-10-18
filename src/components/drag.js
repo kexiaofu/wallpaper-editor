@@ -47,6 +47,7 @@ Vue.directive('drag',{
             let disX = e.clientX - oDiv.offsetLeft;
             document.onmousemove = function (e) {
               let l = e.clientX - disX;
+              console.log(e.clientX)
 
               l > (prevX + maxDist)  && (l = prevX + maxDist );
               l > maxL && (l = maxL );
