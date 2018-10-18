@@ -334,7 +334,7 @@
 
         this.activeIndex = 0;
 
-        files.splice(0,1,this.syncBothSide(files[0]))
+        files.splice(0,1,this.syncBothSide(files[0]));
 
         if(data.printSides > 1) {
           files.splice(1,1,this.syncBothSide(files[1]))
@@ -672,10 +672,17 @@
                 this.waiting = false;
               };
 
-              if(this.files[0].type === 1 && this.files[0].seq === 1) {
-                data.width > data.materialMaxWidth && this.addItem(1,data.materialMaxWidthR - this.ballR);
+              console.log(file);
 
-                data.height > data.materialMaxHeight && this.addItem(0,data.materialMaxHeightR - this.ballR);
+              if(this.files[0].type === 1 && this.files[0].seq === 1) {
+                if(file.x.length === 0 && file.y.length === 0) {
+                  data.width > data.materialMaxWidth && this.addItem(1,data.materialMaxWidthR - this.ballR);
+
+                  data.height > data.materialMaxHeight && this.addItem(0,data.materialMaxHeightR - this.ballR);
+                } else {
+                  this.files.splice(0,1,this.syncBothSide(file));
+                }
+
               }
             } else {
               alert(res.data.msg);
